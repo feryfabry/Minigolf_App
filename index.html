@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2e7d32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Minigolf Scorecard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen active">
+            <h1>⛳ Minigolf</h1>
+            <p class="subtitle">Multiplayer Scorecard</p>
+            <div class="home-buttons">
+                <button id="create-game-btn" class="btn-primary">Neues Spiel erstellen</button>
+                <button id="join-game-btn" class="btn-secondary">Spiel beitreten</button>
+            </div>
+        </div>
+
+        <!-- Create Game Screen -->
+        <div id="create-screen" class="screen">
+            <header class="game-header">
+                <button id="create-back-btn" aria-label="Zurück">←</button>
+                <h2>Neues Spiel</h2>
+                <span></span>
+            </header>
+            <div class="setup-section">
+                <h2>Dein Name</h2>
+                <input type="text" id="host-name-input" class="full-input" placeholder="Name eingeben" maxlength="12">
+            </div>
+            <div class="setup-section">
+                <h2>Bahnen</h2>
+                <div class="hole-selector">
+                    <button class="hole-option" data-holes="9">9</button>
+                    <button class="hole-option active" data-holes="12">12</button>
+                    <button class="hole-option" data-holes="18">18</button>
+                </div>
+            </div>
+            <button id="do-create-btn" class="btn-primary" disabled>Spiel erstellen</button>
+        </div>
+
+        <!-- Join Game Screen -->
+        <div id="join-screen" class="screen">
+            <header class="game-header">
+                <button id="join-back-btn" aria-label="Zurück">←</button>
+                <h2>Beitreten</h2>
+                <span></span>
+            </header>
+            <div class="setup-section">
+                <h2>Dein Name</h2>
+                <input type="text" id="join-name-input" class="full-input" placeholder="Name eingeben" maxlength="12">
+            </div>
+            <div class="setup-section">
+                <h2>Raum-Code</h2>
+                <input type="text" id="room-code-input" class="full-input code-input" placeholder="z.B. ABCD" maxlength="4" autocapitalize="characters">
+            </div>
+            <button id="do-join-btn" class="btn-primary" disabled>Beitreten</button>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <header class="game-header">
+                <button id="lobby-back-btn" aria-label="Zurück">←</button>
+                <h2>Lobby</h2>
+                <span></span>
+            </header>
+            <div class="room-code-display">
+                <span>Code:</span>
+                <strong id="lobby-code"></strong>
+            </div>
+            <div class="setup-section">
+                <h2>Spieler</h2>
+                <div id="lobby-player-list"></div>
+            </div>
+            <p class="lobby-hint" id="lobby-hint">Warte auf Spieler...</p>
+            <button id="start-game-btn" class="btn-primary" style="display:none;">Spiel starten</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <header class="game-header">
+                <button id="back-btn" aria-label="Zurück">←</button>
+                <h2>Bahn <span id="current-hole">1</span> / <span id="total-holes">18</span></h2>
+                <button id="scoreboard-btn" aria-label="Tabelle">📊</button>
+            </header>
+            <div id="hole-players"></div>
+            <div class="hole-navigation">
+                <button id="prev-hole-btn" class="btn-nav" disabled>← Zurück</button>
+                <button id="next-hole-btn" class="btn-nav">Weiter →</button>
+            </div>
+        </div>
+
+        <!-- Scoreboard Screen -->
+        <div id="scoreboard-screen" class="screen">
+            <header class="game-header">
+                <button id="scoreboard-back-btn" aria-label="Zurück">←</button>
+                <h2>Ergebnis</h2>
+                <button id="new-game-btn" aria-label="Neues Spiel">🔄</button>
+            </header>
+            <div id="scoreboard-table-wrapper">
+                <table id="scoreboard-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
