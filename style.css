@@ -459,6 +459,18 @@ body {
     color: var(--green-dark);
 }
 
+.btn-new-game {
+    margin-top: 16px;
+    padding: 14px;
+    background: transparent;
+    color: #c62828;
+    border: 2px solid #c62828;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 @media (max-width: 360px) {
     .screen {
         padding: 12px;
