@@ -217,6 +217,7 @@
             saveSession();
             listenToGame();
             showScreen('lobby');
+            renderLobby();
         }).catch(err => {
             alert('Fehler: ' + err.message);
         });
