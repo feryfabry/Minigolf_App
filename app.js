@@ -2,6 +2,7 @@
     'use strict';
 
     const COLORS = ['#e53935','#1e88e5','#43a047','#fb8c00','#8e24aa','#00acc1'];
+    const SESSION_KEY = 'minigolf_session';
 
     let state = {
         roomCode: null,
@@ -33,6 +34,42 @@
         Object.values(screens).forEach(s => s.classList.remove('active'));
         screens[name].classList.add('active');
     }
+
+    // ========== AUTO-REJOIN ON LOAD ==========
+    (function tryAutoRejoin() {
+        const session = loadSession();
+        if (!session) return;
+        const ref = db.ref('games/' + session.roomCode);
+        ref.once('value').then(snap => {
+            if (!snap.exists()) {
+                clearSession();
+                return;
+            }
+            const data = snap.val();
+            const players = data.players || {};
+            // Check if our player still exists in the game
+            if (!players[session.playerId]) {
+                clearSession();
+                return;
+            }
+            // Rejoin!
+            state.roomCode = session.roomCode;
+            state.playerId = session.playerId;
+            state.playerName = session.playerName;
+            state.isHost = session.isHost;
+            state.holes = data.settings ? data.settings.holes : 12;
+            gameRef = ref;
+            listenToGame();
+            if (data.started) {
+                state.started = true;
+                state.currentHole = 0;
+                showScreen('game');
+            } else {
+                showScreen('lobby');
+                renderLobby();
+            }
+        }).catch(() => clearSession());
+    })();
 
     // ========== HOME ==========
     document.getElementById('create-game-btn').addEventListener('click', () => showScreen('create'));
@@ -86,7 +123,7 @@
             },
             scores: {}
         }).then(() => {
-            setupDisconnect();
+            saveSession();
             listenToGame();
             showScreen('lobby');
             renderLobby();
@@ -126,15 +163,41 @@
                 return;
             }
             const data = snap.val();
-            if (data.started) {
-                alert('Spiel läuft bereits!');
+            const players = data.players || {};
+            const playerCount = Object.keys(players).length;
+
+            // Check if player with same name already exists (rejoin)
+            const existingEntry = Object.entries(players).find(
+                ([, p]) => p.name.toLowerCase() === name.toLowerCase()
+            );
+
+            if (existingEntry) {
+                // Rejoin as existing player
+                state.roomCode = code;
+                state.playerId = existingEntry[0];
+                state.playerName = name;
+                state.isHost = false;
+                state.holes = data.settings ? data.settings.holes : 12;
+                saveSession();
+                listenToGame();
+                if (data.started) {
+                    state.started = true;
+                    state.currentHole = 0;
+                    showScreen('game');
+                } else {
+                    showScreen('lobby');
+                    renderLobby();
+                }
                 return;
             }
 
-            const players = data.players || {};
-            const playerCount = Object.keys(players).length;
             if (playerCount >= 6) {
                 alert('Raum ist voll (max. 6 Spieler).');
+                return;
+            }
+
+            if (data.started) {
+                alert('Spiel läuft bereits! Verwende deinen ursprünglichen Namen zum Rejoinen.');
                 return;
             }
 
@@ -151,7 +214,7 @@
             });
         }).then(() => {
             if (!state.roomCode) return;
-            setupDisconnect();
+            saveSession();
             listenToGame();
             showScreen('lobby');
         }).catch(err => {
@@ -191,7 +254,7 @@
     }
 
     function leaveLobby() {
-        if (gameRef && state.playerId) {
+        if (gameRef && state.playerId && !state.started) {
             gameRef.child('players/' + state.playerId).remove();
         }
         cleanup();
@@ -369,16 +432,13 @@
         listeners.push({ ref: gameRef, event: 'value', callback: ref });
     }
 
-    function setupDisconnect() {
-        if (gameRef && state.playerId) {
-            gameRef.child('players/' + state.playerId).onDisconnect().remove();
-        }
-    }
-
     function cleanup() {
-        listeners.forEach(l => gameRef.off(l.event, l.callback));
+        if (gameRef) {
+            listeners.forEach(l => gameRef.off(l.event, l.callback));
+        }
         listeners = [];
         gameRef = null;
+        clearSession();
         state = {
             roomCode: null,
             playerId: null,
@@ -390,6 +450,29 @@
             players: {},
             scores: {}
         };
+    }
+
+    // ========== SESSION PERSISTENCE ==========
+    function saveSession() {
+        try {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({
+                roomCode: state.roomCode,
+                playerId: state.playerId,
+                playerName: state.playerName,
+                isHost: state.isHost
+            }));
+        } catch (e) {}
+    }
+
+    function loadSession() {
+        try {
+            const s = localStorage.getItem(SESSION_KEY);
+            return s ? JSON.parse(s) : null;
+        } catch (e) { return null; }
+    }
+
+    function clearSession() {
+        try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
     }
 
     // ========== UTILS ==========
