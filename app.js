@@ -30,9 +30,42 @@
     };
 
     // ========== SCREENS ==========
-    function showScreen(name) {
+    let currentScreen = 'home';
+
+    function showScreen(name, pushState = true) {
         Object.values(screens).forEach(s => s.classList.remove('active'));
         screens[name].classList.add('active');
+        if (pushState && name !== currentScreen) {
+            history.pushState({ screen: name }, '', '');
+        }
+        currentScreen = name;
+    }
+
+    // Handle back button / swipe-back gesture
+    window.addEventListener('popstate', (e) => {
+        const target = e.state ? e.state.screen : 'home';
+        if (target === 'home' && state.started) {
+            // Don't leave game on back, go to game screen instead
+            showScreen('game', false);
+            renderHole();
+            // Push state again so next back doesn't exit
+            history.pushState({ screen: 'game' }, '', '');
+        } else if (target === 'game' && state.started) {
+            showScreen('game', false);
+            renderHole();
+        } else if (target === 'scoreboard') {
+            showScreen('scoreboard', false);
+            renderScoreboard();
+        } else if (target === 'lobby' && state.roomCode) {
+            showScreen('lobby', false);
+            renderLobby();
+        } else {
+            showScreen('home', false);
+        }
+    });
+
+    // Set initial state
+    history.replaceState({ screen: 'home' }, '', '');
     }
 
     // ========== AUTO-REJOIN ON LOAD ==========
