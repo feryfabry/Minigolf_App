@@ -279,6 +279,12 @@
             leaveLobby();
         }
     });
+    document.getElementById('info-btn').addEventListener('click', () => {
+        const toast = document.getElementById('room-code-toast');
+        document.getElementById('toast-code').textContent = state.roomCode;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    });
     document.getElementById('scoreboard-btn').addEventListener('click', () => {
         showScreen('scoreboard');
         renderScoreboard();

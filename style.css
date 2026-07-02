@@ -242,6 +242,36 @@ body {
     font-size: 1.2rem;
 }
 
+.header-right {
+    display: flex;
+    gap: 0;
+}
+
+.toast {
+    background: var(--green-dark);
+    color: white;
+    text-align: center;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    animation: fadeIn 0.2s;
+}
+
+.toast strong {
+    letter-spacing: 4px;
+    font-size: 1.3rem;
+}
+
+.toast.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 #hole-players {
     display: flex;
     flex-direction: column;

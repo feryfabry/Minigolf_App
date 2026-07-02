@@ -87,8 +87,14 @@
             <header class="game-header">
                 <button id="back-btn" aria-label="Zurück">←</button>
                 <h2>Bahn <span id="current-hole">1</span> / <span id="total-holes">18</span></h2>
-                <button id="scoreboard-btn" aria-label="Tabelle">📊</button>
+                <div class="header-right">
+                    <button id="info-btn" aria-label="Raum-Code anzeigen">ℹ️</button>
+                    <button id="scoreboard-btn" aria-label="Tabelle">📊</button>
+                </div>
             </header>
+            <div id="room-code-toast" class="toast hidden">
+                <span>Code: <strong id="toast-code"></strong></span>
+            </div>
             <div id="hole-players"></div>
             <div class="hole-navigation">
                 <button id="prev-hole-btn" class="btn-nav" disabled>← Zurück</button>
