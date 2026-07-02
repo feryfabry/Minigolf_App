@@ -244,24 +244,26 @@ body {
 
 .header-right {
     display: flex;
-    gap: 0;
+    gap: 4px;
+    align-items: center;
 }
 
 .info-icon {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--green);
     color: white;
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 700;
     font-style: italic;
     font-family: Georgia, serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 2px solid var(--green-dark);
     cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .toast {
