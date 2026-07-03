@@ -358,6 +358,15 @@ body {
     color: #2e7d32;
 }
 
+.score-input button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.player-score-card.disabled {
+    opacity: 0.6;
+}
+
 .score-input .score-value {
     width: 44px;
     text-align: center;

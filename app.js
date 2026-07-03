@@ -326,6 +326,10 @@
         showScreen('game');
         renderHole();
     });
+    document.getElementById('scoreboard-play-btn').addEventListener('click', () => {
+        showScreen('game');
+        renderHole();
+    });
     document.getElementById('new-game-btn').addEventListener('click', () => {
         if (state.isHost && confirm('Neues Spiel? Alle Punkte gehen verloren.')) {
             gameRef.remove().then(() => {
@@ -353,8 +357,9 @@
             const scores = state.scores[pid] || {};
             const score = scores[hole] || 0;
             const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
+            const canEdit = state.isHost || pid === state.playerId;
             return `
-                <div class="player-score-card">
+                <div class="player-score-card${!canEdit ? ' disabled' : ''}">
                     <div>
                         <div class="player-name">
                             <span class="dot" style="background:${p.color}"></span>
@@ -363,9 +368,9 @@
                         <div class="player-total">Gesamt: ${total}</div>
                     </div>
                     <div class="score-input">
-                        <button class="btn-minus" data-player="${pid}" data-dir="-1">−</button>
+                        <button class="btn-minus" data-player="${pid}" data-dir="-1" ${!canEdit ? 'disabled' : ''}>−</button>
                         <span class="score-value">${score}</span>
-                        <button class="btn-plus" data-player="${pid}" data-dir="1">+</button>
+                        <button class="btn-plus" data-player="${pid}" data-dir="1" ${!canEdit ? 'disabled' : ''}>+</button>
                     </div>
                 </div>
             `;
