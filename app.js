@@ -528,9 +528,4 @@
         div.textContent = text;
         return div.innerHTML;
     }
-
-    // Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
 })();
