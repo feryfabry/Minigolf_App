@@ -252,8 +252,8 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--green);
-    color: white;
+    background: #4caf50 !important;
+    color: white !important;
     font-size: 1.2rem;
     font-weight: 700;
     font-style: italic;
@@ -261,7 +261,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--green-dark);
+    border: 2px solid #2e7d32 !important;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
