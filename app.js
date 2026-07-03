@@ -110,6 +110,7 @@
     // ========== CREATE GAME ==========
     const hostNameInput = document.getElementById('host-name-input');
     const doCreateBtn = document.getElementById('do-create-btn');
+    const customHolesInput = document.getElementById('custom-holes-input');
 
     document.getElementById('create-back-btn').addEventListener('click', () => showScreen('home'));
 
@@ -121,8 +122,17 @@
         btn.addEventListener('click', () => {
             document.querySelectorAll('.hole-option').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            customHolesInput.value = '';
             state.holes = parseInt(btn.dataset.holes);
         });
+    });
+
+    customHolesInput.addEventListener('input', () => {
+        const val = parseInt(customHolesInput.value);
+        if (val >= 1 && val <= 36) {
+            document.querySelectorAll('.hole-option').forEach(b => b.classList.remove('active'));
+            state.holes = val;
+        }
     });
 
     doCreateBtn.addEventListener('click', createGame);
