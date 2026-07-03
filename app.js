@@ -180,6 +180,22 @@
         updateJoinBtn();
     });
 
+    // Check URL for ?code= parameter (from QR scan)
+    (function checkUrlCode() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (code && code.length === 4) {
+            const session = loadSession();
+            if (!session) {
+                roomCodeInput.value = code.toUpperCase();
+                showScreen('join');
+                updateJoinBtn();
+            }
+            // Clean URL
+            history.replaceState(null, '', window.location.pathname);
+        }
+    })();
+
     doJoinBtn.addEventListener('click', joinGame);
 
     function joinGame() {
@@ -262,6 +278,17 @@
         document.getElementById('lobby-code').textContent = state.roomCode;
         const startBtn = document.getElementById('start-game-btn');
         startBtn.style.display = state.isHost ? 'block' : 'none';
+
+        // Generate QR code with join URL
+        const qrContainer = document.getElementById('qr-code');
+        qrContainer.innerHTML = '';
+        if (state.roomCode) {
+            const joinUrl = window.location.origin + window.location.pathname + '?code=' + state.roomCode;
+            const qr = qrcode(0, 'M');
+            qr.addData(joinUrl);
+            qr.make();
+            qrContainer.innerHTML = qr.createSvgTag(4, 0);
+        }
     }
 
     function renderLobbyPlayers(players) {
