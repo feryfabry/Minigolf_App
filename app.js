@@ -66,7 +66,6 @@
 
     // Set initial state
     history.replaceState({ screen: 'home' }, '', '');
-    }
 
     // ========== AUTO-REJOIN ON LOAD ==========
     (function tryAutoRejoin() {
