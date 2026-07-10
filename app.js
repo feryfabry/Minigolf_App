@@ -18,6 +18,7 @@
     };
 
     let selectedColor = null;
+    let hostSelectedColor = COLORS[0];
 
     let gameRef = null;
     let listeners = [];
@@ -31,6 +32,23 @@
         game: document.getElementById('game-screen'),
         scoreboard: document.getElementById('scoreboard-screen')
     };
+
+    // ========== TOAST ==========
+    function showToast(msg, duration) {
+        duration = duration || 2500;
+        let toast = document.querySelector('.toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = msg;
+        toast.classList.remove('show');
+        void toast.offsetWidth; // reflow
+        toast.classList.add('show');
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
+    }
 
     // ========== SCREENS ==========
     let currentScreen = 'home';
@@ -118,6 +136,19 @@
 
     document.getElementById('create-back-btn').addEventListener('click', () => showScreen('home'));
 
+    // Host color picker
+    const hostColorPicker = document.getElementById('host-color-picker');
+    hostColorPicker.innerHTML = COLORS.map((c, i) =>
+        `<button class="color-dot${i === 0 ? ' selected' : ''}" style="background:${c}" data-color="${c}"></button>`
+    ).join('');
+    hostColorPicker.addEventListener('click', (e) => {
+        const dot = e.target.closest('.color-dot');
+        if (!dot) return;
+        hostColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+        dot.classList.add('selected');
+        hostSelectedColor = dot.dataset.color;
+    });
+
     function updateCreateBtn() {
         const hasName = !!hostNameInput.value.trim();
         const hasHoles = state.holes >= 1 && state.holes <= 36;
@@ -195,7 +226,7 @@
             settings: { holes: state.holes, maxAttempts: state.maxAttempts },
             started: false,
             players: {
-                [state.playerId]: { name, color: COLORS[0], order: 0 }
+                [state.playerId]: { name, color: hostSelectedColor, order: 0 }
             },
             scores: {}
         }).then(() => {
@@ -204,7 +235,7 @@
             showScreen('lobby');
             renderLobby();
         }).catch(err => {
-            alert('Fehler: ' + err.message);
+            showToast('Fehler: ' + err.message);
         });
     }
 
@@ -283,7 +314,7 @@
                 scanFrame();
             }, { once: true });
         }).catch(() => {
-            alert('Kamera-Zugriff nicht möglich.');
+            showToast('Kamera-Zugriff nicht möglich.');
             stopScanner();
         });
     }
@@ -337,7 +368,7 @@
 
         gameRef.once('value').then(snap => {
             if (!snap.exists()) {
-                alert('Raum nicht gefunden! Prüfe den Code.');
+                showToast('Raum nicht gefunden! Prüfe den Code.');
                 return;
             }
             const data = snap.val();
@@ -370,7 +401,7 @@
             }
 
             if (playerCount >= 6) {
-                alert('Raum ist voll (max. 6 Spieler).');
+                showToast('Raum ist voll (max. 6 Spieler).');
                 return;
             }
 
@@ -420,7 +451,7 @@
                         // Check if player was added (approval removes request too)
                         playerRef.once('value').then(pSnap => {
                             if (!pSnap.exists()) {
-                                alert('Der Host hat die Anfrage abgelehnt.');
+                                showToast('Der Host hat die Anfrage abgelehnt.');
                                 showScreen('home');
                                 state.roomCode = null;
                                 state.playerId = null;
@@ -450,7 +481,7 @@
             showScreen('lobby');
             renderLobby();
         }).catch(err => {
-            alert('Fehler: ' + err.message);
+            showToast('Fehler: ' + err.message);
         });
     }
 
@@ -458,7 +489,13 @@
     document.getElementById('lobby-back-btn').addEventListener('click', leaveLobby);
 
     function renderLobby() {
-        document.getElementById('lobby-code').textContent = state.roomCode;
+        const lobbyCode = document.getElementById('lobby-code');
+        lobbyCode.textContent = state.roomCode;
+        lobbyCode.onclick = () => {
+            navigator.clipboard.writeText(state.roomCode).then(() => {
+                showToast('Code kopiert!', 1500);
+            }).catch(() => {});
+        };
         const startBtn = document.getElementById('start-game-btn');
         startBtn.style.display = state.isHost ? 'block' : 'none';
 
@@ -573,6 +610,15 @@
         prevBtn.disabled = hole === 0;
         nextBtn.textContent = hole === state.holes - 1 ? 'Ergebnis 📊' : 'Weiter →';
 
+        // Progress dots
+        const progressEl = document.getElementById('hole-progress');
+        let dotsHtml = '';
+        for (let h = 0; h < state.holes; h++) {
+            const cls = h === hole ? 'current' : h < hole ? 'done' : '';
+            dotsHtml += `<span class="dot ${cls}"></span>`;
+        }
+        progressEl.innerHTML = dotsHtml;
+
         // Sort: own player first, then by order
         const playersList = getSortedPlayers();
         const myIndex = playersList.findIndex(([pid]) => pid === state.playerId);
@@ -586,6 +632,8 @@
             const score = scores[hole] || 0;
             const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
             const canEdit = state.isHost || pid === state.playerId;
+            const scoreClass = score === 0 ? 'score-empty' : score === 1 ? 'score-ace' : score === 2 ? 'score-birdie' : score === 3 ? 'score-good' : score >= state.maxAttempts ? 'score-max' : '';
+            const scoreDisplay = score === 0 ? '–' : score;
             return `
                 <div class="player-score-card${!canEdit ? ' disabled' : ''}">
                     <div>
@@ -597,7 +645,7 @@
                     </div>
                     <div class="score-input">
                         <button class="btn-minus" data-player="${pid}" data-dir="-1" ${!canEdit ? 'disabled' : ''}>−</button>
-                        <span class="score-value">${score}</span>
+                        <span class="score-value ${scoreClass}">${scoreDisplay}</span>
                         <button class="btn-plus" data-player="${pid}" data-dir="1" ${!canEdit ? 'disabled' : ''}>+</button>
                     </div>
                 </div>
@@ -700,18 +748,21 @@
     function renderScoreboard() {
         const playersList = getSortedPlayers();
         const holes = state.holes;
+        const myCol = playersList.findIndex(([pid]) => pid === state.playerId);
 
         let html = '<thead><tr><th>Bahn</th>';
-        playersList.forEach(([, p]) => {
-            html += `<th>${escapeHtml(p.name)}</th>`;
+        playersList.forEach(([pid, p], i) => {
+            const ownCls = i === myCol ? ' class="own-col"' : '';
+            html += `<th${ownCls}>${escapeHtml(p.name)}</th>`;
         });
         html += '</tr></thead><tbody>';
 
         for (let h = 0; h < holes; h++) {
             html += `<tr><td>${h + 1}</td>`;
-            playersList.forEach(([pid]) => {
+            playersList.forEach(([pid], i) => {
                 const s = (state.scores[pid] || {})[h] || 0;
-                html += `<td>${s || '-'}</td>`;
+                const ownCls = i === myCol ? ' class="own-col"' : '';
+                html += `<td${ownCls}>${s || '–'}</td>`;
             });
             html += '</tr>';
         }
@@ -737,7 +788,8 @@
 
         playersList.forEach(([, p], i) => {
             const isWinner = placements[i] === '\ud83e\udd47';
-            html += `<td class="${isWinner ? 'winner' : ''}"><strong>${totals[i]}</strong> ${placements[i]}</td>`;
+            const ownCls = i === myCol ? ' own-col' : '';
+            html += `<td class="${isWinner ? 'winner' : ''}${ownCls}"><strong>${totals[i]}</strong> ${placements[i]}</td>`;
         });
         html += '</tr></tbody>';
 
