@@ -256,6 +256,78 @@
 
     doJoinBtn.addEventListener('click', joinGame);
 
+    // ========== QR SCANNER ==========
+    const scannerModal = document.getElementById('qr-scanner-modal');
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerCanvas = document.getElementById('scanner-canvas');
+    let scannerStream = null;
+    let scannerAnimFrame = null;
+
+    document.getElementById('scan-qr-btn').addEventListener('click', startScanner);
+    document.getElementById('close-scanner-btn').addEventListener('click', stopScanner);
+    scannerModal.addEventListener('click', (e) => {
+        if (e.target === scannerModal) stopScanner();
+    });
+
+    function startScanner() {
+        scannerModal.style.display = 'flex';
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        }).then(stream => {
+            scannerStream = stream;
+            scannerVideo.srcObject = stream;
+            scannerVideo.play();
+            scannerVideo.addEventListener('loadedmetadata', () => {
+                scannerCanvas.width = scannerVideo.videoWidth;
+                scannerCanvas.height = scannerVideo.videoHeight;
+                scanFrame();
+            }, { once: true });
+        }).catch(() => {
+            alert('Kamera-Zugriff nicht möglich.');
+            stopScanner();
+        });
+    }
+
+    function scanFrame() {
+        if (!scannerStream) return;
+        const ctx = scannerCanvas.getContext('2d');
+        ctx.drawImage(scannerVideo, 0, 0, scannerCanvas.width, scannerCanvas.height);
+        const imageData = ctx.getImageData(0, 0, scannerCanvas.width, scannerCanvas.height);
+        const qr = jsQR(imageData.data, imageData.width, imageData.height);
+        if (qr && qr.data) {
+            // Extract code from URL or raw text
+            let code = '';
+            try {
+                const url = new URL(qr.data);
+                code = url.searchParams.get('code') || '';
+            } catch {
+                code = qr.data.trim();
+            }
+            code = code.toUpperCase().replace(/[^A-Z]/g, '');
+            if (code.length === 4) {
+                roomCodeInput.value = code;
+                updateJoinBtn();
+                if (navigator.vibrate) navigator.vibrate(50);
+                stopScanner();
+                return;
+            }
+        }
+        scannerAnimFrame = requestAnimationFrame(scanFrame);
+    }
+
+    function stopScanner() {
+        if (scannerAnimFrame) {
+            cancelAnimationFrame(scannerAnimFrame);
+            scannerAnimFrame = null;
+        }
+        if (scannerStream) {
+            scannerStream.getTracks().forEach(t => t.stop());
+            scannerStream = null;
+        }
+        scannerVideo.srcObject = null;
+        scannerModal.style.display = 'none';
+    }
+
     function joinGame() {
         const name = joinNameInput.value.trim();
         const code = roomCodeInput.value.trim().toUpperCase();

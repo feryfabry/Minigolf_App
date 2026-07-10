@@ -516,6 +516,75 @@ body {
     flex: 1;
 }
 
+/* QR Scanner Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.scanner-container {
+    background: var(--card);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+}
+.scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+}
+.scanner-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.scanner-header button {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--text);
+    padding: 4px 8px;
+}
+.scanner-video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #000;
+    overflow: hidden;
+}
+.scanner-video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.scanner-frame {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 60%; height: 60%;
+    transform: translate(-50%, -50%);
+    border: 3px solid var(--green-light);
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.3);
+}
+.scanner-hint {
+    text-align: center;
+    padding: 12px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+#scan-qr-btn {
+    margin-top: 8px;
+    width: 100%;
+}
+
 #scoreboard-table {
     width: 100%;
     border-collapse: collapse;
