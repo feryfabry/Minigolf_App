@@ -552,10 +552,6 @@
         // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(10);
 
-        // Animations
-        if (newVal === 1 && dir === 1) showConfetti();
-        if (newVal === 7 && dir === 1) showBadLuck();
-
         // Write to Firebase
         gameRef.child(`scores/${playerId}/${hole}`).set(newVal);
     }
@@ -588,6 +584,21 @@
     function navigateHole(dir) {
         const next = state.currentHole + dir;
         if (next < 0) return;
+
+        // Check scores on the hole we're leaving (only when going forward)
+        if (dir > 0) {
+            const leavingHole = state.currentHole;
+            let hasHoleInOne = false;
+            let hasBadLuck = false;
+            for (const pid of Object.keys(state.players)) {
+                const s = (state.scores[pid] || {})[leavingHole] || 0;
+                if (s === 1) hasHoleInOne = true;
+                if (s >= state.maxAttempts) hasBadLuck = true;
+            }
+            if (hasHoleInOne) showConfetti();
+            else if (hasBadLuck) showBadLuck();
+        }
+
         if (next >= state.holes) {
             showScreen('scoreboard');
             renderScoreboard();
