@@ -303,7 +303,59 @@
             }
 
             if (data.started) {
-                alert('Spiel läuft bereits! Verwende deinen ursprünglichen Namen zum Rejoinen.');
+                // Late join: send request to host
+                const requestId = generatePlayerId();
+                const color = selectedColor || COLORS[playerCount % COLORS.length];
+                gameRef.child('joinRequests/' + requestId).set({
+                    name,
+                    color,
+                    order: playerCount
+                });
+                // Wait for host approval
+                state.roomCode = code;
+                state.playerId = requestId;
+                state.playerName = name;
+                state.isHost = false;
+                state.holes = data.settings.holes;
+                state.maxAttempts = data.settings.maxAttempts || 7;
+                showScreen('lobby');
+                document.getElementById('lobby-code').textContent = code;
+                document.getElementById('lobby-hint').textContent = 'Warte auf Bestätigung vom Host...';
+                document.getElementById('start-game-btn').style.display = 'none';
+                document.getElementById('lobby-player-list').innerHTML = '';
+                document.getElementById('qr-code').innerHTML = '';
+                // Listen for approval (player added) or denial (request removed)
+                const reqRef = gameRef.child('joinRequests/' + requestId);
+                const playerRef = gameRef.child('players/' + requestId);
+                const approvalListener = playerRef.on('value', snap => {
+                    if (snap.exists()) {
+                        // Approved! Enter game
+                        playerRef.off('value', approvalListener);
+                        reqRef.off('value', denialListener);
+                        saveSession();
+                        state.started = true;
+                        state.currentHole = 0;
+                        listenToGame();
+                        showScreen('game');
+                        renderHole();
+                    }
+                });
+                const denialListener = reqRef.on('value', snap => {
+                    if (!snap.exists()) {
+                        // Request removed (denied or cleaned up)
+                        playerRef.off('value', approvalListener);
+                        reqRef.off('value', denialListener);
+                        // Check if player was added (approval removes request too)
+                        playerRef.once('value').then(pSnap => {
+                            if (!pSnap.exists()) {
+                                alert('Der Host hat die Anfrage abgelehnt.');
+                                showScreen('home');
+                                state.roomCode = null;
+                                state.playerId = null;
+                            }
+                        });
+                    }
+                });
                 return;
             }
 
@@ -637,8 +689,37 @@
                 // Update during game
                 renderHole();
             }
+
+            // Host: handle late join requests
+            if (state.isHost && data.joinRequests) {
+                handleJoinRequests(data.joinRequests);
+            }
         });
         listeners.push({ ref: gameRef, event: 'value', callback: ref });
+    }
+
+    let pendingRequest = null; // prevent multiple popups
+    function handleJoinRequests(requests) {
+        const entries = Object.entries(requests);
+        if (entries.length === 0 || pendingRequest) return;
+        const [reqId, reqData] = entries[0];
+        pendingRequest = reqId;
+        const allow = confirm(`${reqData.name} möchte dem laufenden Spiel beitreten. Zulassen?`);
+        if (allow) {
+            // Add player and remove request
+            const playerCount = Object.keys(state.players).length;
+            gameRef.child('players/' + reqId).set({
+                name: reqData.name,
+                color: reqData.color,
+                order: playerCount
+            }).then(() => {
+                return gameRef.child('joinRequests/' + reqId).remove();
+            });
+        } else {
+            // Deny: remove request
+            gameRef.child('joinRequests/' + reqId).remove();
+        }
+        pendingRequest = null;
     }
 
     function cleanup() {
