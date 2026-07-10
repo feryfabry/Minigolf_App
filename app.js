@@ -598,31 +598,38 @@
         const playersList = getSortedPlayers();
         const holes = state.holes;
 
-        const totals = playersList.map(([pid, p]) => {
-            const scores = state.scores[pid] || {};
-            const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
-            return { name: p.name, total };
-        }).sort((a, b) => a.total - b.total);
-
-        let body = 'Minigolf Ergebnis%0A%0A';
-        body += 'Platzierung:%0A';
-        totals.forEach((p, i) => {
-            body += `${i + 1}. ${p.name}: ${p.total} Schläge%0A`;
-        });
-        body += '%0A--- Details ---%0A%0A';
-
-        playersList.forEach(([pid, p]) => {
-            const scores = state.scores[pid] || {};
-            body += `${p.name}: `;
+        // Build totals with proper score reading
+        const results = playersList.map(([pid, p]) => {
+            const playerScores = state.scores[pid] || {};
+            let total = 0;
+            const perHole = [];
             for (let h = 0; h < holes; h++) {
-                body += `B${h + 1}:${scores[h] || 0} `;
+                const s = Number(playerScores[h]) || 0;
+                perHole.push(s);
+                total += s;
             }
-            const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
-            body += `= ${total}%0A`;
+            return { name: p.name, total, perHole };
         });
 
-        const subject = encodeURIComponent('Minigolf Ergebnis - ' + new Date().toLocaleDateString('de-DE'));
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        const sorted = [...results].sort((a, b) => a.total - b.total);
+
+        let body = 'Minigolf Ergebnis\n\n';
+        body += 'Platzierung:\n';
+        sorted.forEach((p, i) => {
+            body += `${i + 1}. ${p.name}: ${p.total} Schläge\n`;
+        });
+        body += '\n--- Details ---\n\n';
+
+        results.forEach(p => {
+            body += `${p.name}: `;
+            p.perHole.forEach((s, h) => {
+                body += `B${h + 1}:${s} `;
+            });
+            body += `= ${p.total}\n`;
+        });
+
+        const subject = 'Minigolf Ergebnis - ' + new Date().toLocaleDateString('de-DE');
+        window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     }
 
     // ========== SESSION PERSISTENCE ==========
