@@ -183,7 +183,8 @@ body {
     gap: 8px;
 }
 
-.hole-option {
+.hole-option,
+.attempts-option {
     flex: 1;
     padding: 14px;
     border: 2px solid #e0e0e0;
@@ -195,7 +196,8 @@ body {
     transition: all 0.2s;
 }
 
-.hole-option.active {
+.hole-option.active,
+.attempts-option.active {
     border-color: var(--green);
     background: var(--green);
     color: white;
@@ -299,24 +301,43 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.toast {
-    background: var(--green-dark);
-    color: white;
-    text-align: center;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 1.1rem;
+.info-panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
     margin-bottom: 12px;
     animation: fadeIn 0.2s;
+    overflow: hidden;
 }
 
-.toast strong {
-    letter-spacing: 4px;
-    font-size: 1.3rem;
+.info-panel .room-code-display {
+    margin-bottom: 0;
+    box-shadow: none;
 }
 
-.toast.hidden {
+.info-panel.hidden {
     display: none;
+}
+
+/* Color Picker */
+.color-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.color-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+}
+
+.color-dot.selected {
+    border-color: var(--text);
+    transform: scale(1.2);
 }
 
 @keyframes fadeIn {

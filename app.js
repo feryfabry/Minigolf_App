@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const COLORS = ['#e53935','#1e88e5','#43a047','#fb8c00','#8e24aa','#00acc1'];
+    const COLORS = ['#e53935','#1e88e5','#43a047','#fb8c00','#8e24aa','#00acc1','#6d4c41','#ec407a','#26a69a','#ab47bc'];
     const SESSION_KEY = 'minigolf_session';
 
     let state = {
@@ -10,11 +10,14 @@
         playerName: null,
         isHost: false,
         holes: 12,
+        maxAttempts: 7,
         started: false,
         currentHole: 0,
         players: {},   // { id: { name, color, order } }
         scores: {}     // { playerId: { "0": 3, "1": 2, ... } }
     };
+
+    let selectedColor = null;
 
     let gameRef = null;
     let listeners = [];
@@ -111,6 +114,7 @@
     const hostNameInput = document.getElementById('host-name-input');
     const doCreateBtn = document.getElementById('do-create-btn');
     const customHolesInput = document.getElementById('custom-holes-input');
+    const customAttemptsInput = document.getElementById('custom-attempts-input');
 
     document.getElementById('create-back-btn').addEventListener('click', () => showScreen('home'));
 
@@ -132,6 +136,23 @@
         if (val >= 1 && val <= 36) {
             document.querySelectorAll('.hole-option').forEach(b => b.classList.remove('active'));
             state.holes = val;
+        }
+    });
+
+    document.querySelectorAll('.attempts-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.attempts-option').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            customAttemptsInput.value = '';
+            state.maxAttempts = parseInt(btn.dataset.attempts);
+        });
+    });
+
+    customAttemptsInput.addEventListener('input', () => {
+        const val = parseInt(customAttemptsInput.value);
+        if (val >= 1 && val <= 15) {
+            document.querySelectorAll('.attempts-option').forEach(b => b.classList.remove('active'));
+            state.maxAttempts = val;
         }
     });
 
@@ -158,7 +179,7 @@
         gameRef = db.ref('games/' + state.roomCode);
 
         gameRef.set({
-            settings: { holes: state.holes },
+            settings: { holes: state.holes, maxAttempts: state.maxAttempts },
             started: false,
             players: {
                 [state.playerId]: { name, color: COLORS[0], order: 0 }
@@ -178,6 +199,20 @@
     const joinNameInput = document.getElementById('join-name-input');
     const roomCodeInput = document.getElementById('room-code-input');
     const doJoinBtn = document.getElementById('do-join-btn');
+
+    // Color picker
+    const colorPicker = document.getElementById('color-picker');
+    selectedColor = COLORS[0];
+    colorPicker.innerHTML = COLORS.map((c, i) =>
+        `<button class="color-dot${i === 0 ? ' selected' : ''}" style="background:${c}" data-color="${c}"></button>`
+    ).join('');
+    colorPicker.addEventListener('click', (e) => {
+        const dot = e.target.closest('.color-dot');
+        if (!dot) return;
+        colorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+        dot.classList.add('selected');
+        selectedColor = dot.dataset.color;
+    });
 
     document.getElementById('join-back-btn').addEventListener('click', () => showScreen('home'));
 
@@ -264,10 +299,11 @@
             state.playerName = name;
             state.isHost = false;
             state.holes = data.settings.holes;
+            state.maxAttempts = data.settings.maxAttempts || 7;
 
             return gameRef.child('players/' + state.playerId).set({
                 name,
-                color: COLORS[playerCount % COLORS.length],
+                color: selectedColor || COLORS[playerCount % COLORS.length],
                 order: playerCount
             });
         }).then(() => {
@@ -350,10 +386,20 @@
         }
     });
     document.getElementById('info-btn').addEventListener('click', () => {
-        const toast = document.getElementById('room-code-toast');
-        document.getElementById('toast-code').textContent = state.roomCode;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3000);
+        const panel = document.getElementById('room-code-panel');
+        document.getElementById('panel-code').textContent = state.roomCode;
+        if (panel.classList.contains('hidden')) {
+            // Generate QR
+            const qrContainer = document.getElementById('panel-qr');
+            const joinUrl = window.location.origin + window.location.pathname + '?code=' + state.roomCode;
+            const qr = qrcode(0, 'M');
+            qr.addData(joinUrl);
+            qr.make();
+            qrContainer.innerHTML = qr.createSvgTag(4, 0);
+            panel.classList.remove('hidden');
+        } else {
+            panel.classList.add('hidden');
+        }
     });
     document.getElementById('scoreboard-btn').addEventListener('click', () => {
         showScreen('scoreboard');
@@ -378,6 +424,7 @@
             showScreen('home');
         }
     });
+    document.getElementById('email-results-btn').addEventListener('click', sendResultsEmail);
 
     prevBtn.addEventListener('click', () => navigateHole(-1));
     nextBtn.addEventListener('click', () => navigateHole(1));
@@ -428,7 +475,7 @@
         const scores = state.scores[playerId] || {};
         const current = scores[hole] || 0;
         const newVal = current + dir;
-        if (newVal < 0 || newVal > 9) return;
+        if (newVal < 0 || newVal > state.maxAttempts) return;
 
         // Write to Firebase
         gameRef.child(`scores/${playerId}/${hole}`).set(newVal);
@@ -466,16 +513,28 @@
             html += '</tr>';
         }
 
-        // Total row
-        html += '<tr><td><strong>Σ</strong></td>';
+        // Total + placement row
+        html += '<tr><td><strong>\u03a3</strong></td>';
         const totals = playersList.map(([pid]) => {
             const scores = state.scores[pid] || {};
             return Object.values(scores).reduce((a, b) => a + (b || 0), 0);
         });
-        const minTotal = Math.min(...totals.filter(t => t > 0));
+
+        // Calculate placements
+        const sorted = totals.map((t, i) => ({ total: t, idx: i }))
+            .filter(x => x.total > 0)
+            .sort((a, b) => a.total - b.total);
+        const placements = new Array(playersList.length).fill('');
+        let rank = 1;
+        for (let i = 0; i < sorted.length; i++) {
+            if (i > 0 && sorted[i].total > sorted[i - 1].total) rank = i + 1;
+            const medals = ['🥇', '🥈', '🥉'];
+            placements[sorted[i].idx] = rank <= 3 ? medals[rank - 1] : `#${rank}`;
+        }
+
         playersList.forEach(([, p], i) => {
-            const isWinner = totals[i] === minTotal && totals[i] > 0;
-            html += `<td class="${isWinner ? 'winner' : ''}"><strong>${totals[i]}</strong>${isWinner ? ' 🏆' : ''}</td>`;
+            const isWinner = placements[i] === '\ud83e\udd47';
+            html += `<td class="${isWinner ? 'winner' : ''}"><strong>${totals[i]}</strong> ${placements[i]}</td>`;
         });
         html += '</tr></tbody>';
 
@@ -496,6 +555,7 @@
             state.players = data.players || {};
             state.scores = data.scores || {};
             state.holes = data.settings ? data.settings.holes : state.holes;
+            state.maxAttempts = data.settings ? (data.settings.maxAttempts || 7) : 7;
 
             if (!data.started) {
                 renderLobbyPlayers(state.players);
@@ -531,6 +591,38 @@
             players: {},
             scores: {}
         };
+    }
+
+    // ========== EMAIL RESULTS ==========
+    function sendResultsEmail() {
+        const playersList = getSortedPlayers();
+        const holes = state.holes;
+
+        const totals = playersList.map(([pid, p]) => {
+            const scores = state.scores[pid] || {};
+            const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
+            return { name: p.name, total };
+        }).sort((a, b) => a.total - b.total);
+
+        let body = 'Minigolf Ergebnis%0A%0A';
+        body += 'Platzierung:%0A';
+        totals.forEach((p, i) => {
+            body += `${i + 1}. ${p.name}: ${p.total} Schläge%0A`;
+        });
+        body += '%0A--- Details ---%0A%0A';
+
+        playersList.forEach(([pid, p]) => {
+            const scores = state.scores[pid] || {};
+            body += `${p.name}: `;
+            for (let h = 0; h < holes; h++) {
+                body += `B${h + 1}:${scores[h] || 0} `;
+            }
+            const total = Object.values(scores).reduce((a, b) => a + (b || 0), 0);
+            body += `= ${total}%0A`;
+        });
+
+        const subject = encodeURIComponent('Minigolf Ergebnis - ' + new Date().toLocaleDateString('de-DE'));
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
     }
 
     // ========== SESSION PERSISTENCE ==========
