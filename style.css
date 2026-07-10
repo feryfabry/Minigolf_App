@@ -345,6 +345,53 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Hole-in-One Confetti */
+.confetti-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -20px;
+    animation: confettiFall 1.5s ease-out forwards;
+}
+@keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Bad-Luck Animation */
+.badluck-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: badluckFade 1.8s ease-out forwards;
+}
+.badluck-overlay .emoji {
+    font-size: 5rem;
+    animation: badluckBounce 1.8s ease-out forwards;
+}
+@keyframes badluckFade {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@keyframes badluckBounce {
+    0% { transform: scale(0) rotate(-10deg); }
+    20% { transform: scale(1.3) rotate(5deg); }
+    40% { transform: scale(1) rotate(-3deg); }
+    100% { transform: scale(0.8) rotate(0deg) translateY(30px); }
+}
+
 #hole-players {
     display: flex;
     flex-direction: column;

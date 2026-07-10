@@ -500,8 +500,37 @@
         // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(10);
 
+        // Animations
+        if (newVal === 1 && dir === 1) showConfetti();
+        if (newVal === 7 && dir === 1) showBadLuck();
+
         // Write to Firebase
         gameRef.child(`scores/${playerId}/${hole}`).set(newVal);
+    }
+
+    function showConfetti() {
+        const overlay = document.createElement('div');
+        overlay.className = 'confetti-overlay';
+        const colors = ['#ff0', '#f0f', '#0ff', '#f00', '#0f0', '#00f', '#ff8800'];
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDelay = Math.random() * 0.5 + 's';
+            piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            overlay.appendChild(piece);
+        }
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.remove(), 2000);
+    }
+
+    function showBadLuck() {
+        const overlay = document.createElement('div');
+        overlay.className = 'badluck-overlay';
+        overlay.innerHTML = '<span class="emoji">😢</span>';
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.remove(), 2000);
     }
 
     function navigateHole(dir) {
