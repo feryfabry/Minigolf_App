@@ -279,26 +279,29 @@ body {
 
 .header-right {
     display: flex;
-    gap: 4px;
+    gap: 8px;
     align-items: center;
 }
 
-.info-icon {
-    width: 36px;
-    height: 36px;
+.header-right button {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: #4caf50 !important;
-    color: white !important;
-    font-size: 1.2rem;
-    font-weight: 700;
-    font-style: italic;
-    font-family: Georgia, serif;
+    background: rgba(0,0,0,0.06) !important;
+    border: none !important;
+    font-size: 1.15rem;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #2e7d32 !important;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: none;
+    padding: 0;
+}
+
+.header-right button:active {
+    background: rgba(0,0,0,0.12) !important;
+    transform: scale(0.92);
 }
 
 .info-panel {
