@@ -118,9 +118,14 @@
 
     document.getElementById('create-back-btn').addEventListener('click', () => showScreen('home'));
 
-    hostNameInput.addEventListener('input', () => {
-        doCreateBtn.disabled = !hostNameInput.value.trim();
-    });
+    function updateCreateBtn() {
+        const hasName = !!hostNameInput.value.trim();
+        const hasHoles = state.holes >= 1 && state.holes <= 36;
+        const hasAttempts = state.maxAttempts >= 1 && state.maxAttempts <= 15;
+        doCreateBtn.disabled = !(hasName && hasHoles && hasAttempts);
+    }
+
+    hostNameInput.addEventListener('input', updateCreateBtn);
 
     document.querySelectorAll('.hole-option').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -128,6 +133,7 @@
             btn.classList.add('active');
             customHolesInput.value = '';
             state.holes = parseInt(btn.dataset.holes);
+            updateCreateBtn();
         });
     });
 
@@ -136,7 +142,10 @@
         if (val >= 1 && val <= 36) {
             document.querySelectorAll('.hole-option').forEach(b => b.classList.remove('active'));
             state.holes = val;
+        } else {
+            state.holes = 0;
         }
+        updateCreateBtn();
     });
 
     document.querySelectorAll('.attempts-option').forEach(btn => {
@@ -145,6 +154,7 @@
             btn.classList.add('active');
             customAttemptsInput.value = '';
             state.maxAttempts = parseInt(btn.dataset.attempts);
+            updateCreateBtn();
         });
     });
 
@@ -153,7 +163,10 @@
         if (val >= 1 && val <= 15) {
             document.querySelectorAll('.attempts-option').forEach(b => b.classList.remove('active'));
             state.maxAttempts = val;
+        } else {
+            state.maxAttempts = 0;
         }
+        updateCreateBtn();
     });
 
     doCreateBtn.addEventListener('click', createGame);
@@ -352,8 +365,8 @@
         const hint = document.getElementById('lobby-hint');
         const startBtn = document.getElementById('start-game-btn');
         if (state.isHost) {
-            hint.textContent = sorted.length < 2 ? 'Warte auf Mitspieler...' : `${sorted.length} Spieler bereit!`;
-            startBtn.disabled = sorted.length < 2;
+            hint.textContent = sorted.length < 2 ? 'Du kannst allein starten oder auf Mitspieler warten...' : `${sorted.length} Spieler bereit!`;
+            startBtn.disabled = false;
         } else {
             hint.textContent = 'Warte auf Host...';
         }
@@ -436,7 +449,14 @@
         prevBtn.disabled = hole === 0;
         nextBtn.textContent = hole === state.holes - 1 ? 'Ergebnis 📊' : 'Weiter →';
 
+        // Sort: own player first, then by order
         const playersList = getSortedPlayers();
+        const myIndex = playersList.findIndex(([pid]) => pid === state.playerId);
+        if (myIndex > 0) {
+            const [me] = playersList.splice(myIndex, 1);
+            playersList.unshift(me);
+        }
+
         holePlayers.innerHTML = playersList.map(([pid, p]) => {
             const scores = state.scores[pid] || {};
             const score = scores[hole] || 0;
@@ -477,6 +497,9 @@
         const newVal = current + dir;
         if (newVal < 0 || newVal > state.maxAttempts) return;
 
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(10);
+
         // Write to Firebase
         gameRef.child(`scores/${playerId}/${hole}`).set(newVal);
     }
@@ -492,6 +515,22 @@
         state.currentHole = next;
         renderHole();
     }
+
+    // Swipe between holes
+    let touchStartX = 0;
+    let touchStartY = 0;
+    holePlayers.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    holePlayers.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) navigateHole(1);   // swipe left = next
+            else navigateHole(-1);          // swipe right = prev
+        }
+    }, { passive: true });
 
     // ========== SCOREBOARD ==========
     function renderScoreboard() {
