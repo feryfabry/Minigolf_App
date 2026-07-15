@@ -705,18 +705,12 @@
         const next = state.currentHole + dir;
         if (next < 0) return;
 
-        // Check scores on the hole we're leaving (only when going forward)
+        // Check own player's score on the hole we're leaving (only when going forward)
         if (dir > 0) {
             const leavingHole = state.currentHole;
-            let hasHoleInOne = false;
-            let hasBadLuck = false;
-            for (const pid of Object.keys(state.players)) {
-                const s = (state.scores[pid] || {})[leavingHole] || 0;
-                if (s === 1) hasHoleInOne = true;
-                if (s >= state.maxAttempts) hasBadLuck = true;
-            }
-            if (hasHoleInOne) showConfetti();
-            else if (hasBadLuck) showBadLuck();
+            const myScore = (state.scores[state.playerId] || {})[leavingHole] || 0;
+            if (myScore === 1) showConfetti();
+            else if (myScore >= state.maxAttempts) showBadLuck();
         }
 
         if (next >= state.holes) {
