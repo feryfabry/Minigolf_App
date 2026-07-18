@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const COLORS = ['#e53935','#1e88e5','#43a047','#fb8c00','#8e24aa','#00acc1','#6d4c41','#ec407a','#26a69a','#ab47bc'];
+    const COLORS = ['#1e88e5','#43a047','#fb8c00','#e53935','#8e24aa','#fdd835','#00acc1','#ec407a'];
     const SESSION_KEY = 'minigolf_session';
 
     let state = {
